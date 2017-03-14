@@ -15,12 +15,14 @@
 @property (weak, nonatomic) IBOutlet UILabel *progressLabel;
 @property (weak, nonatomic) IBOutlet UIButton *actionButton;
 @property (weak, nonatomic) IBOutlet UILabel *errorLabel;
+@property (weak, nonatomic) IBOutlet UISwitch *randomDateSwitch;
 
 @end
 
 @implementation PhotosGeneratingViewController
 {
     BOOL                _isGenerating;
+    BOOL                _randomDate;
     NSInteger           _count;
     dispatch_queue_t    _drawingQueue;
     NSOperation         *_operation;
@@ -33,6 +35,7 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
+    _randomDate = YES;
     _isGenerating = NO;
     _drawingQueue = dispatch_queue_create("com.bytedance.drawing", DISPATCH_QUEUE_SERIAL);
     [[NSNotificationCenter defaultCenter] addObserverForName:UITextFieldTextDidChangeNotification object:nil queue:[NSOperationQueue mainQueue] usingBlock:^(NSNotification * _Nonnull note) {
@@ -80,6 +83,7 @@
     
     if (_isGenerating) {
         self.textField.enabled = NO;
+        self.randomDateSwitch.enabled = NO;
         _operation = [self generateImageWithCount:_count progress:^(NSUInteger completed, NSUInteger failed) {
             self.progressLabel.text = [NSString stringWithFormat:@"已经生成：%lu/%ld", (unsigned long)completed, (long)_count];
             self.errorLabel.text = [NSString stringWithFormat:@"出错：%lu", (unsigned long)failed];
@@ -91,18 +95,22 @@
     } else {
         [_operation cancel];
         self.textField.enabled = YES;
+        self.randomDateSwitch.enabled = YES;
     }
 }
 
 - (NSURL *)replaceTakenDateOfImage:(UIImage *)image withDate:(NSDate *)date
 {
     NSString *dateString = [_formatter stringFromDate:date];
-    NSDictionary *imageMeta = @{(NSString *)kCGImagePropertyExifDictionary:
-                                    @{
-                                        (NSString *)kCGImagePropertyExifDateTimeOriginal: dateString,
-                                        (NSString *)kCGImagePropertyExifDateTimeDigitized: dateString
-                                        }
-                                };
+    NSDictionary *imageMeta = @{};
+    if (_randomDate) {
+        imageMeta = @{(NSString *)kCGImagePropertyExifDictionary:
+              @{
+                  (NSString *)kCGImagePropertyExifDateTimeOriginal: dateString,
+                  (NSString *)kCGImagePropertyExifDateTimeDigitized: dateString
+                  }
+          };
+    }
     NSData *imageData = UIImagePNGRepresentation(image);
     CGImageSourceRef source = CGImageSourceCreateWithData((__bridge CFDataRef)imageData, NULL);
     CFStringRef UTI = CGImageSourceGetType(source);
@@ -172,6 +180,10 @@
         });
     });
     return operation;
+}
+
+- (IBAction)randomDateSwitchChanged:(id)sender {
+    _randomDate = !_randomDate;
 }
 
 

@@ -7,6 +7,7 @@
 //
 
 #import "ViewController.h"
+@import Photos;
 
 @interface ViewController ()
 
@@ -16,9 +17,22 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    self.title = @"0.1.0";
+    self.title = @"0.2.0";
 }
 
+- (void)tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath
+{
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    if (indexPath.row == 1) {
+        PHFetchResult<PHAsset *> *result = [PHAsset fetchAssetsWithOptions:nil];
+        
+        [[PHPhotoLibrary sharedPhotoLibrary] performChanges:^{
+            [PHAssetChangeRequest deleteAssets:result];
+        } completionHandler:^(BOOL success, NSError * _Nullable error) {
+            
+        }];
+    }
+}
 
 
 
